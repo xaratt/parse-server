@@ -45,14 +45,14 @@ function handleLogIn(req) {
     .then((results) => {
       if (!results.length) {
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-                              'Invalid username/password.');
+                              'invalid login parameters');
       }
       user = results[0];
       return passwordCrypto.compare(req.body.password, user.password);
     }).then((correct) => {
       if (!correct) {
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-                              'Invalid username/password.');
+                              'invalid login parameters');
       }
       var token = 'r:' + rack();
       user.sessionToken = token;
@@ -139,7 +139,7 @@ function handleGet(req) {
 function handleMe(req) {
   if (!req.info || !req.info.sessionToken) {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-                            'Object not found.');
+                            'invalid session');
   }
   return rest.find(req.config, Auth.master(req.config), '_Session',
                    {_session_token: req.info.sessionToken},
@@ -147,8 +147,8 @@ function handleMe(req) {
   .then((response) => {
     if (!response.results || response.results.length == 0 ||
         !response.results[0].user) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-                            'Object not found.');
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN,
+                            'invalid session token');
     } else {
       var user = response.results[0].user;
       return {response: user};
