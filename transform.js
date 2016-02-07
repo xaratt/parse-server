@@ -98,8 +98,14 @@ function transformKeyValue(schema, className, restKey, restValue, options) {
     return {key: '$and', value: mongoSubqueries};
   default:
     if (options.validate && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
-                            'invalid field name: ' + key);
+      if (options.query) {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY,
+                              'Invalid key name: ' + key);
+      }
+      else {
+        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
+                              'invalid field name: ' + key);
+      }
     }
   }
 
