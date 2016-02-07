@@ -280,6 +280,80 @@ Schema.prototype.addClassIfNotExists = function(className, fields) {
   });
 }
 
+
+// Add or remove schema fields
+Schema.prototype.updateClassIfExists = function(className, fields) {
+  if (!this.data[className]) {
+    return Promise.reject({
+      code: Parse.Error.INVALID_CLASS_NAME,
+      error: 'class ' + className + ' does not exist',
+    });
+  }
+
+  for (fieldName in fields) {
+    if (!fieldNameIsValid(fieldName)) {
+      return Promise.reject({
+        code: Parse.Error.INVALID_KEY_NAME,
+        error: 'invalid field name: ' + fieldName,
+      });
+    }
+    if (!fieldNameIsValidForClass(fieldName, className)) {
+      return Promise.reject({
+        code: 136,
+        error: 'field ' + fieldName + ' cannot be updated',
+      });
+    }
+  }
+
+  mongoObjectSet = {}
+  mongoObjectUnset = {}
+  for (fieldName in fields) {
+    if (fields[fieldName]['__op'] && fields[fieldName]['__op'].toLowerCase() == 'delete') {
+        mongoObjectUnset[fieldName] = '';
+    }
+    else {
+        validatedField = schemaAPITypeToMongoFieldType(fields[fieldName]);
+        if (validatedField.code) {
+          return Promise.reject(validatedField);
+        }
+        mongoObjectSet[fieldName] = validatedField.result;
+    }
+  }
+
+  var geoPoints = Object.keys(mongoObjectSet).filter(key => mongoObjectSet[key] === 'geopoint');
+  if (geoPoints.length > 1) {
+    return Promise.reject({
+      code: Parse.Error.INCORRECT_TYPE,
+      error: 'currently, only one GeoPoint field may exist in an object. Adding ' + geoPoints[1] + ' when ' + geoPoints[0] + ' already exists.',
+    });
+  }
+
+  mongoObject = {};
+  if (Object.keys(mongoObjectSet)) {
+    mongoObject["$set"] = mongoObjectSet;
+  }
+  if (Object.keys(mongoObjectUnset)) {
+    mongoObject["$unset"] = mongoObjectUnset;
+  }
+
+  return this.collection.updateOne({_id: className}, mongoObject)
+  //.then(result => result.result.ok)
+  .then(result => {
+    return this.reload();
+  })
+  .catch(error => {
+    return Promise.reject(error);
+  });
+}
+
+// Remove a schema
+// Doesnot check class availability
+Schema.prototype.removeClass = function(className) {
+  return this.collection.remove({_id: className})
+  .then(result => result.result.ok)
+  .catch(error => Promise.reject(error));
+}
+
 // Returns a promise that resolves successfully to the new schema
 // object or fails with a reason.
 // If 'freeze' is true, refuse to update the schema.

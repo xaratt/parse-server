@@ -123,9 +123,53 @@ function createSchema(req) {
   }));
 }
 
+function updateSchema(req) {
+  if (!req.auth.isMaster) {
+    return Promise.resolve({
+      status: 401,
+      response: {error: 'master key not specified'},
+    });
+  }
+  var className = req.params.className;
+  return req.config.database.loadSchema()
+  .then(schema => schema.updateClassIfExists(className, req.body.fields))
+  .then(result => {
+    return req.config.database.collection('_SCHEMA')
+    .then(coll => coll.findOne({'_id': className}))
+    .then(schema => ({response: mongoSchemaToSchemaAPIResponse(schema)}))
+    .catch(error => ({
+      status: 400,
+      response: error,
+    }));
+  })
+  .catch(error => ({
+    status: 400,
+    response: error,
+  }));
+}
+
+function deleteSchema(req) {
+  if (!req.auth.isMaster) {
+    return Promise.resolve({
+      status: 401,
+      response: {error: 'master key not specified'},
+    });
+  }
+  var className = req.params.className;
+  return req.config.database.loadSchema()
+  .then(schema => schema.removeClass(className))
+  .then(result => ({ response: {} }))
+  .catch(error => ({
+    status: 400,
+    response: error,
+  }));
+}
+
 router.route('GET', '/schemas', getAllSchemas);
 router.route('GET', '/schemas/:className', getOneSchema);
 router.route('POST', '/schemas', createSchema);
 router.route('POST', '/schemas/:className', createSchema);
+router.route('PUT', '/schemas/:className', updateSchema);
+router.route('DELETE', '/schemas/:className', deleteSchema);
 
 module.exports = router;
