@@ -62,7 +62,7 @@ var otherRegex = /^[A-Za-z][A-Za-z0-9_]*$/;
 ExportAdapter.prototype.collection = function(className) {
   if (!Schema.classNameIsValid(className)) {
     throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME,
-                          'invalid className: ' + className);
+                          'bad characters in classname: ' + className);
   }
   return this.connect().then(() => {
     return this.db.collection(this.collectionPrefix + className);

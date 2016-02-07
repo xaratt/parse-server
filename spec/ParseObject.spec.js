@@ -329,7 +329,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("invalid key name", function(done) {
+  it("invalid field name", function(done) {
     var item = new Parse.Object("Item");
     ok(!item.set({"foo^bar": "baz"}),
        'Item should not be updated with invalid key.');

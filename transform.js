@@ -99,7 +99,7 @@ function transformKeyValue(schema, className, restKey, restValue, options) {
   default:
     if (options.validate && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
-                            'invalid key name: ' + key);
+                            'invalid field name: ' + key);
     }
   }
 
