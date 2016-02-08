@@ -431,8 +431,7 @@ Schema.prototype.validateField = function(className, key, type, freeze) {
     } else {
       throw new Parse.Error(
         Parse.Error.INCORRECT_TYPE,
-        'schema mismatch for ' + className + '.' + key +
-          '; expected ' + expected + ' but got ' + type);
+        'invalid type for key ' + key + ', expected ' + expected + ', but got ' + type);
     }
   }
 
