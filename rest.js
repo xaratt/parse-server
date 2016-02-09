@@ -31,7 +31,7 @@ function del(config, auth, className, objectId) {
 
   if (className === '_User' && !auth.couldUpdateUserId(objectId)) {
     throw new Parse.Error(Parse.Error.SESSION_MISSING,
-                          'insufficient auth to delete user');
+                          'Parse::UserCannotBeAlteredWithoutSessionError');
   }
 
   enforceRoleSecurity('delete', className, auth);
