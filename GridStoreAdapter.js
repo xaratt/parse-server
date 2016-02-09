@@ -8,9 +8,13 @@ var path = require('path');
 
 // For a given config object, filename, and data, store a file
 // Returns a promise
-function create(config, filename, data) {
+function create(config, filename, data, contentType) {
+  var options = {};
+  if (contentType) {
+    options['content_type'] = contentType;
+  }
   return config.database.connect().then(() => {
-    var gridStore = new GridStore(config.database.db, filename, 'w');
+    var gridStore = new GridStore(config.database.db, filename, 'w', options);
     return gridStore.open();
   }).then((gridStore) => {
     return gridStore.write(data);
@@ -23,13 +27,16 @@ function create(config, filename, data) {
 // Resolves a promise that succeeds with the buffer result
 // from GridStore
 function get(config, filename) {
+  var gridStore = null;
   return config.database.connect().then(() => {
     return GridStore.exist(config.database.db, filename);
   }).then(() => {
     var gridStore = new GridStore(config.database.db, filename, 'r');
     return gridStore.open();
   }).then((gridStore) => {
-    return gridStore.read();
+    return gridStore.read().then((content) => {
+        return {"content": content, "contentType": gridStore.contentType};
+    });
   });
 }
 

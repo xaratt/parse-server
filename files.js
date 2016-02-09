@@ -40,7 +40,7 @@ var processCreate = function(req, res, next) {
   }
 
   var filename = rack() + '_' + req.params.filename + extension;
-  FilesAdapter.getAdapter().create(req.config, filename, req.body)
+  FilesAdapter.getAdapter().create(req.config, filename, req.body, contentType)
   .then(() => {
     res.status(201);
     var location = FilesAdapter.getAdapter().location(req.config, req, filename);
@@ -56,10 +56,14 @@ var processGet = function(req, res) {
   var config = new Config(req.params.appId);
   FilesAdapter.getAdapter().get(config, req.params.filename)
   .then((data) => {
+    var content = data['content'];
+    var contentType = data['contentType'];
     res.status(200);
-    var contentType = mime.lookup(req.params.filename);
+    if (!contentType) {
+        contentType = mime.lookup(req.params.filename);
+    }
     res.set('Content-type', contentType);
-    res.end(data);
+    res.end(content);
   }).catch((error) => {
     res.status(404);
     res.set('Content-type', 'text/plain');
