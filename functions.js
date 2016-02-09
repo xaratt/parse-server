@@ -26,7 +26,7 @@ function handleCloudFunction(req) {
       Parse.Cloud.Functions[req.params.functionName](request, response);
     });
   } else {
-    throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid function.');
+    throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'function not found');
   }
 }
 
