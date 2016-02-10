@@ -172,7 +172,7 @@ function handleLogOut(req) {
     ).then((records) => {
       if (records.results && records.results.length) {
         rest.del(req.config, Auth.master(req.config), '_Session',
-          records.results[0].id
+          records.results[0].objectId
         );
       }
     });
