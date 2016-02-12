@@ -244,35 +244,44 @@ RestQuery.prototype.replaceWithin = function() {
     return correctPoint && (-90.0 <= point.latitude) && (point.latitude <= 90.0);
   }
   var withinObject = findObjectWithKey(this.restWhere, '$within');
-  console.log("XXXXXX", JSON.stringify(withinObject));
   if (!withinObject) {
       return;
   }
-  if (withinObject['$box']) {
-    if (withinObject['$box'].length != 2) {
+  if (withinObject['$within']['$box']) {
+    var box = withinObject['$within']['$box'];
+    if (box.length != 2) {
       throw new Parse.Error(Parse.Error.INVALID_QUERY,
                             'improper usage of $box');
     }
-    var bottomLeft = withinObject['$box'][0];
-    var upperRight = withinObject['$box'][1];
-    var correctPoints = correctPoints && _validate_geopoint(bottomLeft) && _validate_geopoint(upperRight);
+    var bottomLeft = box[0];
+    var upperRight = box[1];
+    var correctPoints = _validate_geopoint(bottomLeft) && _validate_geopoint(upperRight);
     if (!correctPoints) {
       throw new Parse.Error(Parse.Error.INVALID_QUERY,
                             'incorrect geopoints in $box');
     }
+    // TODO: support negative coordinates
     if (bottomLeft.latitude < upperRight.latitude && bottomLeft.longitude < upperRight.longitude) {
+        // backwards compatibility with Parse.com API
+        if (upperRight.longitude - bottomLeft.longitude > 180) {
+          throw new Parse.Error(Parse.Error.INVALID_QUERY,
+                                'Geo box queries larger than 180 degrees in longitude are not supported. Please check point order.');
+        }
         // ok
         return;
     }
-    else if (bottomLeft.latitude < upperRight.latitude && bottomLeft.longitude > upperRight.longitude) {
+    else if (/*bottomLeft.latitude < upperRight.latitude &&*/ bottomLeft.longitude > upperRight.longitude) {
+      // backwards compatibility with Parse.com API
       // box through the dateline
       throw new Parse.Error(Parse.Error.INVALID_QUERY,
                             'Geo box queries that cross the international date lines are not currently supported');
     }
     else {
+      // bottomLeft.latitude > upperRight.latitude
+      // backwards compatibility with Parse.com API
       // makes no sense
       throw new Parse.Error(Parse.Error.INVALID_QUERY,
-                            'Geo box queries larger than 180 degrees in longitude are not supported. Please check point order.');
+                            'Southwestern point given is further north than northeastern point. Please check point order.');
     }
   }
 }
@@ -358,7 +367,6 @@ RestQuery.prototype.replaceDontSelect = function() {
 // Returns a promise for whether it was successful.
 // Populates this.response with an object that only has 'results'.
 RestQuery.prototype.runFind = function() {
-    console.log(JSON.stringify(this.restWhere));
   return this.config.database.find(
     this.className, this.restWhere, this.findOptions).then((results) => {
       if (this.className == '_User') {
