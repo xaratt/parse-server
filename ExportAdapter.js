@@ -120,6 +120,8 @@ ExportAdapter.prototype.redirectClassNameForKey = function(className, key) {
 // batch request, that could confuse other users of the schema.
 ExportAdapter.prototype.validateObject = function(className, object) {
   return this.loadSchema().then((schema) => {
+      console.log('----------');
+      console.log(className, object);
     return schema.validateObject(className, object);
   });
 };
@@ -225,6 +227,9 @@ ExportAdapter.prototype.handleRelationUpdates = function(className,
         pending.push(this.addRelation(key, className,
                                       objectId,
                                       object.objectId));
+        pending.push(this.addRelationToDocument(key, className,
+                                                objectId,
+                                                object.className));
       }
       deleteMe.push(key);
     }
@@ -253,6 +258,14 @@ ExportAdapter.prototype.handleRelationUpdates = function(className,
   }
   return Promise.all(pending);
 };
+
+
+// Adds a relation data to the parent object {"__type":"Relation","className":"CLASSNAME"}
+ExportAdapter.prototype.addRelationToDocument = function(key, className, objectId, toClassName) {
+  return this.collection(className).then((coll) => {
+    return coll.update({'_id': objectId}, {'$set': {key: {'__type': 'Relation', 'className': toClassName}}});
+  });
+}
 
 // Adds a relation.
 // Returns a promise that resolves successfully iff the add was successful.
@@ -337,6 +350,28 @@ ExportAdapter.prototype.create = function(className, object, options) {
   var schema;
   var isMaster = !('acl' in options);
   var aclGroup = options.acl || [];
+  var objectCopy = JSON.parse(JSON.stringify(object));
+
+  var process = function(mongoObject, op, key) {
+      if (!op) {
+        return mongoObject;
+      }
+      if (op.__op == 'AddRelation') {
+        if (op.objects) {
+          for (var obj of op.objects) {
+            if (obj.className) {
+              mongoObject[key] = {'__type': 'Relation', 'className': obj.className};
+            }
+          }
+        }
+      }
+      if (op.__op == 'Batch') {
+        for (var x of op.ops) {
+          mongoObject = process(mongoObject, x, key);
+        }
+      }
+      return mongoObject;
+  }
 
   return this.loadSchema().then((s) => {
     schema = s;
@@ -351,6 +386,9 @@ ExportAdapter.prototype.create = function(className, object, options) {
     return this.collection(className);
   }).then((coll) => {
     var mongoObject = transform.transformCreate(schema, className, object);
+    for (var key in objectCopy) {
+      mongoObject = process(mongoObject, objectCopy[key], key);
+    }
     return coll.insert([mongoObject]);
   });
 };
