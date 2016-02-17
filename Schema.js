@@ -622,6 +622,7 @@ function getObjectType(obj) {
       return 'array';
     case 'AddRelation':
     case 'RemoveRelation':
+      if (!obj.objects.length) return undefined;
       return 'relation<' + obj.objects[0].className + '>';
     case 'Batch':
       return getObjectType(obj.ops[0]);

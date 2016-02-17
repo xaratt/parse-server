@@ -120,8 +120,6 @@ ExportAdapter.prototype.redirectClassNameForKey = function(className, key) {
 // batch request, that could confuse other users of the schema.
 ExportAdapter.prototype.validateObject = function(className, object) {
   return this.loadSchema().then((schema) => {
-      console.log('----------');
-      console.log(className, object);
     return schema.validateObject(className, object);
   });
 };
