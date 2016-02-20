@@ -588,7 +588,8 @@ ExportAdapter.prototype.find = function(className, query, options = {}) {
       for (var acl of aclGroup) {
         orParts.push({"_rperm" : { "$in" : [acl]}});
       }
-      mongoWhere = {'$and': [mongoWhere, {'$or': orParts}]};
+      var emptyACLCondition = {"ACL" : { "$ne" : {} }};
+      mongoWhere = {'$and': [emptyACLCondition, mongoWhere, {'$or': orParts}]};
     }
     if (options.count) {
       return coll.count(mongoWhere, mongoOptions);
