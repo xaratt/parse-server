@@ -206,6 +206,7 @@ function transformWhere(schema, className, restWhere) {
 // restCreate is the "create" clause in REST API form.
 // Returns the mongo form of the object.
 function transformCreate(schema, className, restCreate) {
+  var aclObject = JSON.stringify(restCreate["ACL"]);
   var mongoCreate = transformACL(restCreate);
   for (var restKey in restCreate) {
     var out = transformKeyValue(schema, className, restKey, restCreate[restKey]);
@@ -213,6 +214,10 @@ function transformCreate(schema, className, restCreate) {
       mongoCreate[out.key] = out.value;
     }
   }
+  if (aclObject == "{}") {
+      mongoCreate["ACL"] = {};
+  }
+
   return mongoCreate;
 }
 
@@ -221,6 +226,7 @@ function transformUpdate(schema, className, restUpdate) {
   if (!restUpdate) {
     throw 'got empty restUpdate';
   }
+  var aclObject = JSON.stringify(restUpdate["ACL"]);
   var mongoUpdate = {};
   var acl = transformACL(restUpdate);
   if (acl._rperm || acl._wperm) {
@@ -248,6 +254,9 @@ function transformUpdate(schema, className, restUpdate) {
       mongoUpdate['$set'] = mongoUpdate['$set'] || {};
       mongoUpdate['$set'][out.key] = out.value;
     }
+  }
+  if (aclObject == "{}") {
+      mongoUpdate["ACL"] = {};
   }
 
   return mongoUpdate;
