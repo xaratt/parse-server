@@ -25,10 +25,14 @@ export class FilesController {
       let config = new Config(req.params.appId);
       let filename = req.params.filename;
       this._filesAdapter.getFileData(config, filename).then((data) => {
+        var content = data['content'];
+        var contentType = data['contentType'];
         res.status(200);
-        var contentType = mime.lookup(filename);
+        if (!contentType) {
+          contentType = mime.lookup(filename);
+        }
         res.set('Content-type', contentType);
-        res.end(data);
+        res.end(content);
       }).catch((error) => {
         res.status(404);
         res.set('Content-type', 'text/plain');
@@ -75,7 +79,7 @@ export class FilesController {
       }
 
       let filename = randomHexString(32) + '_' + req.params.filename + extension;
-      filesController._filesAdapter.createFile(req.config, filename, req.body).then(() => {
+      filesController._filesAdapter.createFile(req.config, filename, req.body, contentType).then(() => {
         res.status(201);
         var location = filesController._filesAdapter.getFileLocation(req.config, filename);
         res.set('Location', location);

@@ -75,13 +75,13 @@ export class UsersRouter extends ClassesRouter {
     return req.database.find('_User', { username: req.body.username })
       .then((results) => {
         if (!results.length) {
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'invalid login parameters');
         }
         user = results[0];
         return passwordCrypto.compare(req.body.password, user.password);
       }).then((correct) => {
         if (!correct) {
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'invalid login parameters');
         }
 
         let token = 'r:' + newToken();

@@ -39,7 +39,7 @@ export class FunctionsRouter extends PromiseRouter {
       if (Parse.Cloud.Validators[req.params.functionName]) {
         var result = Parse.Cloud.Validators[req.params.functionName](request);
         if (!result) {
-          throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Validation failed.');
+          throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'function not found');
         }
       }
 
@@ -48,7 +48,7 @@ export class FunctionsRouter extends PromiseRouter {
         Parse.Cloud.Functions[req.params.functionName](request, response);
       });
     } else {
-      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid function.');
+      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'function not found');
     }
   }
 }

@@ -9,9 +9,13 @@ import { FilesAdapter } from './FilesAdapter';
 export class GridStoreAdapter extends FilesAdapter {
   // For a given config object, filename, and data, store a file
   // Returns a promise
-  createFile(config, filename, data) {
+  createFile(config, filename, data, contentType) {
+    var options = {};
+    if (contentType) {
+      options['content_type'] = contentType;
+    }
     return config.database.connect().then(() => {
-      let gridStore = new GridStore(config.database.db, filename, 'w');
+      let gridStore = new GridStore(config.database.db, filename, 'w', options);
       return gridStore.open();
     }).then((gridStore) => {
       return gridStore.write(data);
@@ -32,13 +36,16 @@ export class GridStoreAdapter extends FilesAdapter {
   }
 
   getFileData(config, filename) {
+    var gridStore = null;
     return config.database.connect().then(() => {
       return GridStore.exist(config.database.db, filename);
     }).then(() => {
-      let gridStore = new GridStore(config.database.db, filename, 'r');
+      gridStore = new GridStore(config.database.db, filename, 'r');
       return gridStore.open();
     }).then((gridStore) => {
-      return gridStore.read();
+      return gridStore.read().then((content) => {
+        return {"content": content, "contentType": gridStore.contentType};
+      });
     });
   }
 
