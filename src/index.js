@@ -1,5 +1,7 @@
 // ParseServer - open-source compatible API Server for Parse apps
 
+import 'babel-polyfill';
+
 var batch = require('./batch'),
     bodyParser = require('body-parser'),
     cache = require('./cache'),
@@ -27,8 +29,11 @@ import { AnalyticsRouter }     from './Routers/AnalyticsRouter';
 import { FunctionsRouter }     from './Routers/FunctionsRouter';
 import { SchemasRouter }       from './Routers/SchemasRouter';
 import { IAPValidationRouter } from './Routers/IAPValidationRouter';
+import { PushRouter }          from './Routers/PushRouter';
+import { FilesRouter }         from './Routers/FilesRouter';
+import { LogsRouter }         from './Routers/LogsRouter';
 
-
+import { loadAdapter }       from './Adapters/AdapterLoader';
 import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
 import { LoggerController }    from './Controllers/LoggerController';
 
@@ -63,9 +68,9 @@ function ParseServer({
   appId,
   masterKey,
   databaseAdapter,
-  filesAdapter = new GridStoreAdapter(),
+  filesAdapter,
   push,
-  loggerAdapter = new FileLoggerAdapter(),
+  loggerAdapter,
   databaseURI,
   cloud,
   collectionPrefix = '',
@@ -87,15 +92,6 @@ function ParseServer({
     DatabaseAdapter.setAdapter(databaseAdapter);
   }
 
-  // Make push adapter
-  let pushConfig = push;
-  let pushAdapter;
-  if (pushConfig && pushConfig.adapter) {
-    pushAdapter = pushConfig.adapter;
-  } else if (pushConfig) {
-    pushAdapter = new ParsePushAdapter(pushConfig)
-  }
-
   if (databaseURI) {
     DatabaseAdapter.setAppDatabaseURI(appId, databaseURI);
   }
@@ -109,8 +105,17 @@ function ParseServer({
       throw "argument 'cloud' must either be a string or a function";
     }
   }
+  
+  
+  const filesControllerAdapter = loadAdapter(filesAdapter, GridStoreAdapter);
+  const pushControllerAdapter = loadAdapter(push, ParsePushAdapter);
+  const loggerControllerAdapter = loadAdapter(loggerAdapter, FileLoggerAdapter);
 
-  let filesController = new FilesController(filesAdapter);
+  // We pass the options and the base class for the adatper,
+  // Note that passing an instance would work too
+  const filesController = new FilesController(filesControllerAdapter);
+  const pushController = new PushController(pushControllerAdapter);
+  const loggerController = new LoggerController(loggerControllerAdapter);
   
   cache.apps[appId] = {
     masterKey: masterKey,
@@ -122,6 +127,8 @@ function ParseServer({
     fileKey: fileKey,
     facebookAppIds: facebookAppIds,
     filesController: filesController,
+    pushController: pushController,
+    loggerController: loggerController,
     enableAnonymousUsers: enableAnonymousUsers,
     oauth: oauth,
 };
@@ -140,7 +147,7 @@ function ParseServer({
   var api = express();
 
   // File handling needs to be before default middlewares are applied
-  api.use('/', FilesController.getExpressRouter());
+  api.use('/', new FilesRouter().getExpressRouter());
 
   // TODO: separate this from the regular ParseServer object
   if (process.env.TESTING == 1) {
@@ -161,8 +168,8 @@ function ParseServer({
     new InstallationsRouter(),
     new FunctionsRouter(),
     new SchemasRouter(),
-    PushController.getExpressRouter(),
-    new LoggerController(loggerAdapter).getExpressRouter(),
+    new PushRouter(),
+    new LogsRouter(),
     new IAPValidationRouter()
   ];
   
@@ -179,6 +186,17 @@ function ParseServer({
   appRouter.mountOnto(api);
 
   api.use(middlewares.handleParseErrors);
+
+
+  process.on('uncaughtException', (err) => {
+    if( err.code === "EADDRINUSE" ) { // user-friendly message for this common error
+      console.log(`Unable to listen on port ${err.port}. The port is already in use.`);
+      process.exit(0);
+    }
+    else {
+      throw err;
+    }
+  });
 
   return api;
 }
