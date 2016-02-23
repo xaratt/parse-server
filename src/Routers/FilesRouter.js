@@ -45,7 +45,7 @@ export class FilesRouter {
         contentType = mime.lookup(filename);
       }
       res.set('Content-Type', contentType);
-      res.end(data);
+      res.end(content);
     }).catch(() => {
       res.status(404);
       res.set('Content-Type', 'text/plain');
