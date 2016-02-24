@@ -232,7 +232,8 @@ function deleteSchema(req) {
         });
       } else {
         coll.drop((err, reply) => {
-          if (err) {
+          // ignore droping unexisting collection
+          if (err && err.message != 'ns not found') {
             reject(err);
           } else {
             // We've dropped the collection now, so delete the item from _SCHEMA
