@@ -42,7 +42,11 @@ if (program.args.length > 0 ) {
   console.log(`Configuation loaded from ${jsonPath}`)
 } 
 
-if (!program.appId || !program.masterKey || !program.serverURL) {
+var appId = program.appId || options.appId;
+var masterKey = program.masterKey || options.masterKey;
+var serverURL = program.serverURL || options.serverURL;
+
+if (!appId || !masterKey || !serverURL) {
   program.outputHelp();
   console.error("");
   console.error(colors.red("ERROR: appId, masterKey and serverURL are required"));
@@ -51,7 +55,7 @@ if (!program.appId || !program.masterKey || !program.serverURL) {
 }
 
 options = Object.keys(definitions).reduce(function (options, key) {
-  if (program[key]) {
+  if (program[key] && !options[key]) {
     options[key] = program[key];
   }
   return options;
