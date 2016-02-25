@@ -2,10 +2,10 @@
 // that writes to the database.
 // This could be either a "create" or an "update".
 
+import cache from './cache';
 var deepcopy = require('deepcopy');
 
 var Auth = require('./Auth');
-var cache = require('./cache');
 var Config = require('./Config');
 var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
@@ -74,6 +74,8 @@ RestWrite.prototype.execute = function() {
   }).then(() => {
     return this.transformUser();
   }).then(() => {
+    return this.expandFilesForExistingObjects();
+  }).then(() => {
     return this.runDatabaseOperation();
   }).then(() => {
     return this.handleFollowup();
@@ -111,23 +113,28 @@ RestWrite.prototype.validateSchema = function() {
 // Runs any beforeSave triggers against this operation.
 // Any change leads to our data being mutated.
 RestWrite.prototype.runBeforeTrigger = function() {
+  // Avoid doing any setup for triggers if there is no 'beforeSave' trigger for this class.
+  if (!triggers.triggerExists(this.className, triggers.Types.beforeSave, this.config.applicationId)) {
+    return Promise.resolve();
+  }
+
   // Cloud code gets a bit of extra data for its objects
   var extraData = {className: this.className};
   if (this.query && this.query.objectId) {
     extraData.objectId = this.query.objectId;
   }
-  // Build the inflated object, for a create write, originalData is empty
-  var inflatedObject = triggers.inflate(extraData, this.originalData);;
-  inflatedObject._finishFetch(this.data);
-  // Build the original object, we only do this for a update write
-  var originalObject;
+
+  let originalObject = null;
+  let updatedObject = triggers.inflate(extraData, this.originalData);
   if (this.query && this.query.objectId) {
+    // This is an update for existing object.
     originalObject = triggers.inflate(extraData, this.originalData);
   }
+  updatedObject.set(Parse._decode(undefined, this.data));
 
   return Promise.resolve().then(() => {
     return triggers.maybeRunTrigger(
-      'beforeSave', this.auth, inflatedObject, originalObject);
+      'beforeSave', this.auth, updatedObject, originalObject, this.config.applicationId);
   }).then((response) => {
     if (response && response.object) {
       this.data = response.object;
@@ -287,7 +294,7 @@ RestWrite.prototype.handleOAuthAuthData = function(provider) {
   if (!validateAuthData || !validateAppId) {
     return false;
   };
-
+	
   return validateAuthData(authData, oauthOptions)
     .then(() => {
       if (appIds && typeof validateAppId === "function") {
@@ -699,6 +706,16 @@ RestWrite.prototype.handleInstallation = function() {
   return promise;
 };
 
+// If we short-circuted the object response - then we need to make sure we expand all the files,
+// since this might not have a query, meaning it won't return the full result back.
+// TODO: (nlutsenko) This should die when we move to per-class based controllers on _Session/_User
+RestWrite.prototype.expandFilesForExistingObjects = function() {
+  // Check whether we have a short-circuited response - only then run expansion.
+  if (this.response && this.response.response) {
+    this.config.filesController.expandFilesInObject(this.config, this.response.response);
+  }
+};
+
 RestWrite.prototype.runDatabaseOperation = function() {
   if (this.response) {
     return;
@@ -772,7 +789,7 @@ RestWrite.prototype.runAfterTrigger = function() {
     originalObject = triggers.inflate(extraData, this.originalData);
   }
 
-  triggers.maybeRunTrigger('afterSave', this.auth, inflatedObject, originalObject);
+  triggers.maybeRunTrigger('afterSave', this.auth, inflatedObject, originalObject, this.config.applicationId);
 };
 
 // A helper to figure out what location this operation happens at.

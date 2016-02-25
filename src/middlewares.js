@@ -1,7 +1,8 @@
+import cache from './cache';
+
 var Parse = require('parse/node').Parse;
 
 var auth = require('./Auth');
-var cache = require('./cache');
 var Config = require('./Config');
 
 // Checks that the request is authorized for this app and checks user
@@ -138,7 +139,7 @@ function handleParseHeaders(req, res, next) {
 var allowCrossDomain = function(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type');
+  res.header('Access-Control-Allow-Headers', 'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type');
 
   // intercept OPTIONS method
   if ('OPTIONS' == req.method) {
