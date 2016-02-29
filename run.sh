@@ -1,3 +1,6 @@
 #!/bin/bash
 
-bin/parse-server -- local-config.json
+PARSE_ADMIN_ENABLED=true bin/parse-server -- local-config.json
+
+# or
+# bin/parse-server -- local-config.json

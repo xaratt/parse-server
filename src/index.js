@@ -32,11 +32,13 @@ import { PushRouter }          from './Routers/PushRouter';
 import { FilesRouter }         from './Routers/FilesRouter';
 import { LogsRouter }          from './Routers/LogsRouter';
 import { HooksRouter }         from './Routers/HooksRouter';
+import { AppsRouter }         from './Routers/AppsRouter';
 
 import { loadAdapter }         from './Adapters/AdapterLoader';
 import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
 import { LoggerController }    from './Controllers/LoggerController';
 import { HooksController }     from './Controllers/HooksController';
+import { AppsController }     from './Controllers/AppsController';
 
 import requiredParameter       from './requiredParameter';
 // Mutate the Parse object to add the Cloud Code handlers
@@ -146,6 +148,11 @@ function ParseServer({
     cache.apps[appId]['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
   }
 
+  if (process.env.PARSE_ADMIN_ENABLED) {
+    const appsController = new AppsController(appId);
+    cache.apps[appId]['appsController'] = appsController;
+  }
+
   // This app serves the Parse API directly.
   // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
   var api = express();
@@ -185,6 +192,10 @@ function ParseServer({
   
   if (process.env.PARSE_EXPERIMENTAL_HOOKS_ENABLED || process.env.TESTING) {
     routers.push(new HooksRouter());
+  }
+
+  if (process.env.PARSE_ADMIN_ENABLED) {
+    routers.push(new AppsRouter());
   }
 
   let appRouter = new PromiseRouter();
