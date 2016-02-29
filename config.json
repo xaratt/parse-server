@@ -1,0 +1,9 @@
+{
+  "databaseURI": "mongodb://localhost:27017/parse",
+  "appId": "",
+  "masterKey": "",
+  "restAPIKey": "",
+  "fileKey": "",
+  "mountPath": "/1",
+  "serverURL": "http://localhost:1337"
+}
