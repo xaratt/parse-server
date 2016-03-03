@@ -12,8 +12,9 @@ export class AppsRouter extends PromiseRouter {
 
   handleGet(req) {
     var appsController = req.config.appsController;
+    var userId = req.auth.user.id;
     if (req.params.applicationId) {
-      return appsController.getApplication(req.params.applicationId, req.auth.config.masterKey).then( (foundApp) => {
+      return appsController.getApplication(userId, req.params.applicationId).then( (foundApp) => {
         if (!foundApp) {
           throw new Parse.Error(143, `no app with id: ${req.params.applicationId} is defined`);
         }
@@ -21,24 +22,25 @@ export class AppsRouter extends PromiseRouter {
       });
     }
 
-    return appsController.getApplications().then((apps) => {
+    return appsController.getApplications(userId).then((apps) => {
       return { response: apps || [] };
     }, (err) => {
       throw err;
     });
   }
 
-  createApp(anApp, userId, config) {
-    return config.appsController.createApp(anApp, userId).then( (app) => ({response: app}));
+  createApp(userId, anApp, config) {
+    return config.appsController.createApp(userId, anApp).then( (app) => ({response: app}));
   };
 
-  updateApp(anApp, userId, config) {
-    return config.appsController.updateApp(anApp, userId).then((app) => ({response: app}));
+  updateApp(userId, anApp, config) {
+    return config.appsController.updateApp(userId, anApp).then((app) => ({response: app}));
   };
 
   handlePost(req) {
+    var userId = req.auth.user.id;
     var anApp = getAppObjectFromRequest(req.body);
-    return this.createApp(anApp, req.auth.user.id, req.config);
+    return this.createApp(userId, anApp, req.config);
   };
 
   getAppObjectFromRequest(body, applicationId) {
@@ -57,8 +59,9 @@ export class AppsRouter extends PromiseRouter {
 
   handleUpdate(req) {
     if (req.params.applicationId && req.body) {
+      var userId = req.auth.user.id;
       var anApp = getAppObjectFromRequest(req.body, req.params.applicationId);
-      return this.updateApp(anApp, req.auth.user.id, req.config);
+      return this.updateApp(userId, anApp, req.config);
     } else {
       throw new Parse.Error(143, "invalid application parameters");
     }
@@ -66,8 +69,9 @@ export class AppsRouter extends PromiseRouter {
 
   handleDelete(req) {
     var appsController = req.config.appsController;
+    var userId = req.auth.user.id;
     if (req.params.applicationId) {
-      return appsController.deleteApp(req.params.applicationId).then(() => ({response: {}}))
+      return appsController.deleteApp(userId, req.params.applicationId).then(() => ({response: {}}))
     }
     return Promise.resolve({response: {}});
   };
