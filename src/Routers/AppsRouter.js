@@ -29,23 +29,14 @@ export class AppsRouter extends PromiseRouter {
     });
   }
 
-  createApp(userId, anApp, config) {
-    return config.appsController.createApp(userId, anApp).then( (app) => ({response: app}));
-  };
-
-  updateApp(userId, anApp, config) {
-    return config.appsController.updateApp(userId, anApp).then((app) => ({response: app}));
-  };
-
   handlePost(req) {
     var userId = req.auth.user.id;
     var anApp = getAppObjectFromRequest(req.body);
-    return this.createApp(userId, anApp, req.config);
+    return this.createApplication(userId, anApp, req.config);
   };
 
-  getAppObjectFromRequest(body, applicationId) {
+  getAppObjectFromRequest(body) {
     var app = {}
-    app.id = applicationId || null;
     var whitelistFields = [
         "appName", "clientClassCreationEnabled", "clientPushEnabled", "javascriptKey",
         "masterKey", "requireRevocableSessions", "restKey", "revokeSessionOnPasswordChange",
@@ -60,8 +51,8 @@ export class AppsRouter extends PromiseRouter {
   handleUpdate(req) {
     if (req.params.applicationId && req.body) {
       var userId = req.auth.user.id;
-      var anApp = getAppObjectFromRequest(req.body, req.params.applicationId);
-      return this.updateApp(userId, anApp, req.config);
+      var anApp = getAppObjectFromRequest(req.body);
+      return this.updateApplication(userId, req.params.applicationId, anApp, req.config);
     } else {
       throw new Parse.Error(143, "invalid application parameters");
     }
@@ -71,7 +62,7 @@ export class AppsRouter extends PromiseRouter {
     var appsController = req.config.appsController;
     var userId = req.auth.user.id;
     if (req.params.applicationId) {
-      return appsController.deleteApp(userId, req.params.applicationId).then(() => ({response: {}}))
+      return appsController.deleteApplication(userId, req.params.applicationId).then(() => ({response: {}}))
     }
     return Promise.resolve({response: {}});
   };
