@@ -28,46 +28,40 @@ export class AppsRouter extends PromiseRouter {
     });
   }
 
-  createApp(anApp, config) {
-    return config.appsController.createApp(anApp).then( (app) => ({response: app}));
+  createApp(anApp, userId, config) {
+    return config.appsController.createApp(anApp, userId).then( (app) => ({response: app}));
   };
 
-  updateApp(anApp, config) {
-    return config.appsController.updateApp(anApp).then((app) => ({response: app}));
+  updateApp(anApp, userId, config) {
+    return config.appsController.updateApp(anApp, userId).then((app) => ({response: app}));
   };
 
   handlePost(req) {
-    return this.createHook(req.body, req.config);
+    var anApp = getAppObjectFromRequest(req.body);
+    return this.createApp(anApp, req.auth.user.id, req.config);
   };
 
-  createAppObjectFromRequest(applicationId, body) {
+  getAppObjectFromRequest(body, applicationId) {
     var app = {}
-    app.id = applicationId;
-    //TODO
-    // "appName": "<APPLICATION_NAME>",
-    // "applicationId": "<APPLICATION_ID>",
-    // "clientClassCreationEnabled": true,
-    // "clientPushEnabled": false,
-    // "dashboardURL": "https://www.parse.com/apps/yourapp",
-    // "javascriptKey": "<JAVASCRIPT_KEY>",
-    // "masterKey": "<MASTER_KEY>",
-    // "requireRevocableSessions": true,
-    // "restKey": "<REST_API_KEY>",
-    // "revokeSessionOnPasswordChange": true,
-    // "webhookKey": "<WEBHOOK_KEY>",
-    // "windowsKey": "<WINDOWS_KEY>"
-    // + user id
+    app.id = applicationId || null;
+    var whitelistFields = [
+        "appName", "clientClassCreationEnabled", "clientPushEnabled", "javascriptKey",
+        "masterKey", "requireRevocableSessions", "restKey", "revokeSessionOnPasswordChange",
+        "webhookKey", "windowsKey"
+    ];
+    whitelistFields.forEach(function(field) {
+      app[field] = body[field] || null;
+    });
     return app;
-  }
+  };
 
   handleUpdate(req) {
-    var app;
     if (req.params.applicationId && req.body) {
-      app = createAppObjectFromRequest(req.params.applicationId && req.body);
+      var anApp = getAppObjectFromRequest(req.body, req.params.applicationId);
+      return this.updateApp(anApp, req.auth.user.id, req.config);
     } else {
       throw new Parse.Error(143, "invalid application parameters");
     }
-    return this.updateApp(app, req.config);
   };
 
   handleDelete(req) {
