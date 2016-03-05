@@ -44,11 +44,34 @@ function handleParseHeaders(req, res, next) {
       fileViaJSON = true;
     }
 
-/*
-    var configAppId = Object.keys(cache.apps)[0];
-    var DatabaseAdapter = require('./DatabaseAdapter');
-    var db = DatabaseAdapter.getDatabaseConnection(configAppId);
-    */
+    // +++++++++++++++++++
+    var email = req.get("X-Parse-Email");
+    var password = req.get("X-Parse-Password");
+    var accountKey = req.get("X-Parse-Account-Key");
+
+    if (email && password || accountKey) {
+        var configAppId = Object.keys(cache.apps)[0];
+        var DatabaseAdapter = require('./DatabaseAdapter');
+        var db = DatabaseAdapter.getDatabaseConnection(configAppId);
+        var username = "asdf"; // !!!
+        var password = "zxcv"; // !!!
+        getAuthUser(db, username, password)
+          .then(user => {
+            console.log("AAAA", user);
+            if (user) {
+
+              info.app = cache.default.apps[configAppId];
+              req.config = new Config(configAppId, mount);
+              req.auth = new auth.Auth(req.config, true, user);
+              req.database = req.config.database;
+              req.info = info;
+
+              next();
+              return;
+            }
+          });
+    }
+    // +++++++++++++++++++
 
     if (req.body && req.body._ApplicationId
     && cache.apps[req.body._ApplicationId]
@@ -141,6 +164,34 @@ function handleParseHeaders(req, res, next) {
     });
 
 }
+
+var getAuthUser = function getAuthUser(db, username, password) {
+    var passwordCrypto = require('./password');
+    return db.rawCollection('_User')
+      .then((collection) => {
+        return collection.findOne({"username": username});
+      })
+      .then(user => {
+        if (!user) {
+          return new Error("User " + username + " not found");
+        }
+        return user;
+      })
+      .then(user => {
+        console.log("UASE",user);
+        return passwordCrypto.compare(password, user._hashed_password)
+          .then((pass) => {
+            if (pass) {
+              return user;
+            }
+            return null;
+          });
+      })
+      .catch(function(error) {
+          console.error("AAAA", error.stack);
+      });
+}
+
 
 var allowCrossDomain = function(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*');

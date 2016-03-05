@@ -45,7 +45,7 @@ export class AppsController {
 
   getApplications(userId) {
     var apps = this.get({userId: userId});
-    return apps.maps(function(app) {
+    return apps.map(function(app) {
       return removePrivateFields(app);
     });
   }

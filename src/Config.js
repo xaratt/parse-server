@@ -33,6 +33,10 @@ export class Config {
     this.loggerController = cacheInfo.loggerController;
     this.oauth = cacheInfo.oauth;
 
+    if (process.env.PARSE_ADMIN_ENABLED) {
+      this.hooksController = cacheInfo.hooksController;
+    }
+
     this.mount = mount;
   }
 };
