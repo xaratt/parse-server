@@ -44,6 +44,12 @@ function handleParseHeaders(req, res, next) {
       fileViaJSON = true;
     }
 
+/*
+    var configAppId = Object.keys(cache.apps)[0];
+    var DatabaseAdapter = require('./DatabaseAdapter');
+    var db = DatabaseAdapter.getDatabaseConnection(configAppId);
+    */
+
     if (req.body && req.body._ApplicationId
     && cache.apps[req.body._ApplicationId]
     && (
