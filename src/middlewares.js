@@ -53,13 +53,12 @@ function handleParseHeaders(req, res, next) {
         var configAppId = Object.keys(cache.apps)[0];
         var DatabaseAdapter = require('./DatabaseAdapter');
         var db = DatabaseAdapter.getDatabaseConnection(configAppId);
-        var username = "asdf"; // !!!
-        var password = "zxcv"; // !!!
-        getAuthUser(db, username, password)
+        //var email = "asdf@gmail.com"; // !!!
+        //var password = "zxcv"; // !!!
+        getAuthUser(db, email, password, accountKey)
           .then(user => {
             console.log("AAAA", user);
             if (user) {
-
               info.app = cache.default.apps[configAppId];
               req.config = new Config(configAppId, mount);
               req.auth = new auth.Auth(req.config, true, user);
@@ -165,15 +164,24 @@ function handleParseHeaders(req, res, next) {
 
 }
 
-var getAuthUser = function getAuthUser(db, username, password) {
+var getAuthUser = function getAuthUser(db, email, password, accountKey) {
+    if (username && password) {
+        return getAuthUserByCredentials(db, email, password);
+    }
+    else if (accountKey) {
+        return getAuthUserByAccountKey(db, accountKey);
+    }
+}
+
+var getAuthUserByCredentials = function getAuthUserByCredentials(db, email, password) {
     var passwordCrypto = require('./password');
     return db.rawCollection('_User')
       .then((collection) => {
-        return collection.findOne({"username": username});
+        return collection.findOne({"email": email});
       })
       .then(user => {
         if (!user) {
-          return new Error("User " + username + " not found");
+          return new Error("User " + email + " not found");
         }
         return user;
       })
@@ -189,8 +197,27 @@ var getAuthUser = function getAuthUser(db, username, password) {
       })
       .catch(function(error) {
           console.error("AAAA", error.stack);
+          return null;
       });
 }
+var getAuthUserByAccountKey = function getAuthUserByAccountKey(db, accountKey) {
+    return db.rawCollection('_User')
+        .then((collection) => {
+            return collection.findOne({"account_keys": accountKey});
+        })
+        .then(user => {
+            if (!user) {
+                return new Error("User with account key " + accountKey + " not found");
+            }
+            return user;
+        })
+        .catch(function(error) {
+            console.error("BBBBB", error.stack);
+            return null;
+        });
+}
+
+
 
 
 var allowCrossDomain = function(req, res, next) {
