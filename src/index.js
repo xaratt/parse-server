@@ -32,13 +32,15 @@ import { PushRouter }          from './Routers/PushRouter';
 import { FilesRouter }         from './Routers/FilesRouter';
 import { LogsRouter }          from './Routers/LogsRouter';
 import { HooksRouter }         from './Routers/HooksRouter';
-import { AppsRouter }         from './Routers/AppsRouter';
+import { AppsRouter }          from './Routers/AppsRouter';
+import { AccountRouter }       from './Routers/AccountRouter';
 
 import { loadAdapter }         from './Adapters/AdapterLoader';
 import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
 import { LoggerController }    from './Controllers/LoggerController';
 import { HooksController }     from './Controllers/HooksController';
-import { AppsController }     from './Controllers/AppsController';
+import { AppsController }      from './Controllers/AppsController';
+import { AccountController }   from './Controllers/AccountController';
 
 import requiredParameter       from './requiredParameter';
 // Mutate the Parse object to add the Cloud Code handlers
@@ -151,6 +153,9 @@ function ParseServer({
   if (process.env.PARSE_ADMIN_ENABLED) {
     const appsController = new AppsController(appId);
     cache.apps[appId]['appsController'] = appsController;
+
+    const accountController = new AccountController(appId);
+    cache.apps[appId]['accountController'] = accountController;
   }
 
   // This app serves the Parse API directly.
@@ -196,6 +201,7 @@ function ParseServer({
 
   if (process.env.PARSE_ADMIN_ENABLED) {
     routers.push(new AppsRouter());
+    routers.push(new AccountRouter());
   }
 
   let appRouter = new PromiseRouter();
