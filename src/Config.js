@@ -34,7 +34,8 @@ export class Config {
     this.oauth = cacheInfo.oauth;
 
     if (process.env.PARSE_ADMIN_ENABLED) {
-      this.hooksController = cacheInfo.hooksController;
+      this.appsController = cacheInfo.appsController;
+      this.accountController = cacheInfo.accountController;
     }
 
     this.mount = mount;
